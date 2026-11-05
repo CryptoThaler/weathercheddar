@@ -11,12 +11,13 @@
   "build": { "command": "npm run build:cf" },
   // Keep the *.workers.dev URL for previews (served under /weathercheddar/ there too).
   "workers_dev": true,
-  // Zone routes: only these paths on www.cryptothaler.com hit this Worker; the rest of the
-  // site keeps its current origin. Requires cryptothaler.com on Cloudflare DNS with a
+  // Zone route: only /weathercheddar* on www.cryptothaler.com hits this Worker; the rest of
+  // the site keeps its current origin. Requires cryptothaler.com on Cloudflare DNS with a
   // proxied (orange-cloud) record for www.
+  // Do NOT add /weather-cheddar*: that path belongs to the existing Worker
+  // "weather-cheddar-path-proxy" (original app: guide, agent, K_Guage, data endpoints).
   "routes": [
-    { "pattern": "www.cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" },
-    { "pattern": "www.cryptothaler.com/weather-cheddar*", "zone_name": "cryptothaler.com" }
+    { "pattern": "www.cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" }
   ],
   "assets": {
     "directory": "./dist-cf",

@@ -98,12 +98,12 @@ Everything is bundled, including fonts (via @fontsource) and map geometry (world
 
 ## Cloudflare: www.cryptothaler.com/weathercheddar
 
-A Cloudflare Pages custom domain attaches to a whole hostname, so a Pages project can't sit at one path of an existing site. This repo instead uses Cloudflare's documented way to serve a subdirectory: a **Worker with static assets** (`assets.base_path`) plus a **zone route**. Only `/weathercheddar*` on www.cryptothaler.com goes to this Worker. Every other path keeps its current origin. Refs: [Serving a subdirectory](https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/), [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/).
+A Cloudflare Pages custom domain attaches to a whole hostname, so a Pages project can't sit at one path of an existing site. This repo instead uses Cloudflare's documented way to serve a subdirectory: a **Worker with static assets** (`assets.base_path`) plus a **zone route**. Only `/weathercheddar*` on www.cryptothaler.com goes to this Worker. Every other path keeps its current origin, including **`/weather-cheddar/…`**, which stays with the existing `weather-cheddar-path-proxy` Worker (the original app: guide, temperature agent, K_Guage, data endpoints). Don't add a `/weather-cheddar*` route to this repo. Refs: [Serving a subdirectory](https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/), [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/).
 
 | File | Purpose |
 |---|---|
-| `wrangler.jsonc` | Worker `weathercheddar`. Assets come from `dist-cf/` with `base_path: "/weathercheddar"`. Routes: `www.cryptothaler.com/weathercheddar*` and `/weather-cheddar*`. `build.command` runs `npm run build:cf` before every deploy. |
-| `cloudflare/worker.js` | Runs only when no asset matches. 301s the legacy `/weather-cheddar[/…]` to `/weathercheddar/` and returns 404 for anything else. |
+| `wrangler.jsonc` | Worker `weathercheddar`. Assets come from `dist-cf/` with `base_path: "/weathercheddar"`. Route: `www.cryptothaler.com/weathercheddar*`. `build.command` runs `npm run build:cf` before every deploy. |
+| `cloudflare/worker.js` | Runs only when no asset matches. Adds the trailing slash to `/weathercheddar` and returns 404 for anything else. |
 | `cloudflare/_headers` | Immutable caching for hashed `/weathercheddar/assets/*`, revalidation for the HTML, basic security headers. |
 | `npm run build:cf` | Builds with absolute base `/weathercheddar/` into `dist-cf/`. The GitHub Pages build (`npm run build` → `dist/`, base `./`) is unchanged. |
 
@@ -113,7 +113,7 @@ Behaviour, checked with `wrangler dev` (Wrangler 4.157.0, pinned in devDependenc
 |---|---|
 | `/weathercheddar/` | 200, dashboard |
 | `/weathercheddar` | 307 → `/weathercheddar/` (query string kept) |
-| `/weather-cheddar`, `/weather-cheddar/*` | 301 → `/weathercheddar/` |
+| `/weather-cheddar/*` | not routed here: the existing `weather-cheddar-path-proxy` Worker serves it |
 | `/weathercheddar/assets/*` | 200, `Cache-Control: public, max-age=31536000, immutable` |
 | `/weathercheddar/<missing>` | 404 |
 
@@ -144,7 +144,7 @@ To test locally first: `npm run dev:cf`, then open http://localhost:8787/weather
 ### Verify
 
 - https://www.cryptothaler.com/weathercheddar/ shows the dashboard. The footer reads `◆ FIXTURE DATA · simulated feed`.
-- https://www.cryptothaler.com/weather-cheddar redirects to `/weathercheddar/`.
+- https://www.cryptothaler.com/weather-cheddar/ still shows the original app (existing Worker), unchanged.
 - The rest of www.cryptothaler.com is unaffected.
 - Preview URL: `https://weathercheddar.<your-subdomain>.workers.dev/weathercheddar/`.
 
