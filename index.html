@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Weather Cheddar</title>
+    <meta name="description" content="METAR-FIRST AVIATION CONSOLE — Weather Cheddar: Actionable Intelligence as a Service for Making That Kalshi Cheese." />
+    <meta name="theme-color" content="#07060a" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 22 L16 6 L29 22 Z' fill='%23ffb627'/%3E%3Ccircle cx='13' cy='17' r='2' fill='%2307060a'/%3E%3Ccircle cx='19' cy='19' r='1.4' fill='%2307060a'/%3E%3C/svg%3E" />
+  </head>
+  <body data-mode="3d">
+    <header class="topbar">
+      <div class="brand">
+        <div class="kicker">METAR-FIRST AVIATION CONSOLE</div>
+        <h1>WEATHER CHEDDAR</h1>
+        <div class="tagline">Actionable Intelligence as a Service for Making That Kalshi Cheese</div>
+      </div>
+      <div class="controls">
+        <div class="sources" aria-label="Feed status">
+          <span class="src" data-src="metar">METAR</span>
+          <span class="src" data-src="nws">NWS</span>
+          <span class="src" data-src="alerts">ALERTS</span>
+          <span class="src" data-src="usgs">USGS</span>
+        </div>
+        <div class="clock"><span>upd <b id="updated">--:--</b></span><span>next <b id="countdown">-:--</b></span></div>
+        <button id="refresh" class="icon-btn" title="Refresh now" aria-label="Refresh now">⟳</button>
+        <button id="toggle" class="toggle" aria-pressed="false" title="Toggle view (R)"><span class="t-dot"></span><span class="t-label">RETRO BOARD</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section id="modern" aria-label="3D globe view">
+        <div id="scene"></div>
+        <div class="stats">
+          <div><label>Active alerts</label><b id="stat-alerts">--</b></div>
+          <div><label>USGS M2.5+ / 2d</label><b id="stat-quakes">--</b></div>
+          <div><label>Largest</label><b id="stat-max">--</b></div>
+          <div><label>Hottest vs fcst hi</label><b id="stat-hot">--</b></div>
+        </div>
+        <aside id="panel" aria-label="Station detail">
+          <button id="panel-close" class="icon-btn sheet-close" aria-label="Close panel">×</button>
+          <div id="panel-body"></div>
+          <section class="quakes"><h4>Seismic · USGS</h4><div id="quakes"></div></section>
+        </aside>
+        <div class="scene-tools">
+          <button id="home" class="icon-btn" title="Reset view (H)" aria-label="Reset view">⌂</button>
+          <span id="fps"></span>
+        </div>
+        <nav id="cards" aria-label="Stations"></nav>
+      </section>
+      <section id="retro" aria-label="Retro station board" hidden></section>
+    </main>
+
+    <footer class="foot">
+      <span id="route">--</span>
+      <span>Sources: aviationweather.gov · api.weather.gov · earthquake.usgs.gov</span>
+      <span class="keys">R toggle view · H reset globe</span>
+    </footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
