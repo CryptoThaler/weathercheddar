@@ -1,0 +1,12 @@
+# Copied into dist-cf/ by `npm run build:cf`. Paths include the /weathercheddar base path.
+/weathercheddar/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+
+# Vite emits content-hashed filenames, so assets can be cached forever.
+/weathercheddar/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/weathercheddar/
+  Cache-Control: public, max-age=0, must-revalidate

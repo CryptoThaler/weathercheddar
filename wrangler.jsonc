@@ -1,0 +1,30 @@
+// Cloudflare Workers Static Assets config for serving the dashboard at
+// https://www.cryptothaler.com/weathercheddar (sub-path of an existing site).
+// Docs: https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/
+// Requires Wrangler >= 4.148.0 (assets.base_path). GitHub Pages is unaffected (.github/workflows/pages.yml).
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "weathercheddar",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-11-05",
+  // `wrangler deploy` runs this first, producing dist-cf/
+  "build": { "command": "npm run build:cf" },
+  // Keep the *.workers.dev URL for previews (served under /weathercheddar/ there too).
+  "workers_dev": true,
+  // Zone routes: only these paths on www.cryptothaler.com hit this Worker; the rest of the
+  // site keeps its current origin. Requires cryptothaler.com on Cloudflare DNS with a
+  // proxied (orange-cloud) record for www.
+  "routes": [
+    { "pattern": "www.cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" },
+    { "pattern": "www.cryptothaler.com/weather-cheddar*", "zone_name": "cryptothaler.com" }
+  ],
+  "assets": {
+    "directory": "./dist-cf",
+    "binding": "ASSETS",
+    // dist-cf/index.html is served at /weathercheddar/
+    "base_path": "/weathercheddar",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "observability": { "enabled": true }
+}

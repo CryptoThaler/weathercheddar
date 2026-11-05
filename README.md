@@ -86,7 +86,61 @@ Everything is bundled, including fonts (via @fontsource) and map geometry (world
 - **GitHub Pages:** `.github/workflows/pages.yml` builds and deploys on every push to `main`. In repo **Settings → Pages**, set **Source: GitHub Actions**.
 - **Vercel:** import the repo. It detects Vite automatically (build `npm run build`, output `dist`).
 - **Any static host:** upload `dist/`.
-- **Embedding at `cryptothaler.com/weather-cheddar`:** host `dist/` under that path, or iframe the Pages/Vercel URL.
+- **Cloudflare at `www.cryptothaler.com/weathercheddar`:** see the next section.
+
+## Cloudflare: www.cryptothaler.com/weathercheddar
+
+A Cloudflare Pages custom domain attaches to a whole hostname, so a Pages project can't sit at one path of an existing site. This repo instead uses Cloudflare's documented way to serve a subdirectory: a **Worker with static assets** (`assets.base_path`) plus a **zone route**. Only `/weathercheddar*` on www.cryptothaler.com goes to this Worker. Every other path keeps its current origin. Refs: [Serving a subdirectory](https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/), [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/).
+
+| File | Purpose |
+|---|---|
+| `wrangler.jsonc` | Worker `weathercheddar`. Assets come from `dist-cf/` with `base_path: "/weathercheddar"`. Routes: `www.cryptothaler.com/weathercheddar*` and `/weather-cheddar*`. `build.command` runs `npm run build:cf` before every deploy. |
+| `cloudflare/worker.js` | Runs only when no asset matches. 301s the legacy `/weather-cheddar[/…]` to `/weathercheddar/` and returns 404 for anything else. |
+| `cloudflare/_headers` | Immutable caching for hashed `/weathercheddar/assets/*`, revalidation for the HTML, basic security headers. |
+| `npm run build:cf` | Builds with absolute base `/weathercheddar/` into `dist-cf/`. The GitHub Pages build (`npm run build` → `dist/`, base `./`) is unchanged. |
+
+Behaviour, checked with `wrangler dev` (Wrangler 4.157.0, pinned in devDependencies):
+
+| Request | Result |
+|---|---|
+| `/weathercheddar/` | 200, dashboard |
+| `/weathercheddar` | 307 → `/weathercheddar/` (query string kept) |
+| `/weather-cheddar`, `/weather-cheddar/*` | 301 → `/weathercheddar/` |
+| `/weathercheddar/assets/*` | 200, `Cache-Control: public, max-age=31536000, immutable` |
+| `/weathercheddar/<missing>` | 404 |
+
+### Prerequisites
+
+1. `cryptothaler.com` uses Cloudflare nameservers.
+2. `www` has a **proxied (orange-cloud)** DNS record. Routes only run on proxied hostnames.
+3. If www.cryptothaler.com is itself a Cloudflare Pages/Workers project on the same zone, the route still takes priority for `/weathercheddar*`.
+
+### Option A: connect the GitHub repo (Workers Builds, recommended)
+
+1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Import a repository** → GitHub → `CryptoThaler/weathercheddar`.
+2. **Project/Worker name:** `weathercheddar`. It must match `name` in `wrangler.jsonc`, or the build fails.
+3. **Build command:** leave empty, since `wrangler deploy` runs `npm run build:cf` itself. **Deploy command:** `npx wrangler deploy` (the default). **Root directory:** `/`. **Production branch:** `main`.
+4. Save and deploy. Every push to `main` then deploys automatically. Other branches get preview builds (`npx wrangler preview`).
+5. Wrangler creates the routes from `wrangler.jsonc` on deploy. Confirm them under **Worker → Settings → Domains & Routes**.
+
+### Option B: deploy from your machine (uploads `dist-cf/`)
+
+```bash
+npm ci
+npx wrangler login
+npm run deploy:cf        # = wrangler deploy → runs build:cf, uploads dist-cf/, sets routes
+```
+
+To test locally first: `npm run dev:cf`, then open http://localhost:8787/weathercheddar/.
+
+### Verify
+
+- https://www.cryptothaler.com/weathercheddar/ shows the dashboard. The footer reads `◆ FIXTURE DATA · simulated feed`.
+- https://www.cryptothaler.com/weather-cheddar redirects to `/weathercheddar/`.
+- The rest of www.cryptothaler.com is unaffected.
+- Preview URL: `https://weathercheddar.<your-subdomain>.workers.dev/weathercheddar/`.
+
+GitHub Pages deployment (`.github/workflows/pages.yml`) keeps running on every push to `main`, independently of Cloudflare.
 
 ## Layout
 
