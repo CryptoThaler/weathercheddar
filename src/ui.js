@@ -1,5 +1,6 @@
 // Modern-mode DOM: station chips, detail panel, 24h obs+forecast chart, hazards.
 import { tempCSS } from './derive.js';
+import { settlementNote } from './stations.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const f0 = (v) => (v == null ? '--' : Math.round(v));
@@ -57,9 +58,10 @@ function spark(obs, fcst, now = Date.now(), w = 120, h = 30) {
 export function renderCards(el, list, sel) {
   el.innerHTML = list
     .map(
-      (d) => `<button class="card ${d.st.id === sel ? 'sel' : ''} ${d.alerts.length ? 'alert' : ''}" data-id="${d.st.id}" style="--c:${tempCSS(d.tempF)}" aria-label="${esc(d.st.city)} ${f0(d.tempF)} degrees">
+      (d) => `<button class="card ${d.st.id === sel ? 'sel' : ''} ${d.alerts.length ? 'alert' : ''} ${d.st.tx ? 'tx' : ''}" data-id="${d.st.id}" style="--c:${tempCSS(d.tempF)}" aria-label="${esc(d.st.city)} ${f0(d.tempF)} degrees">
       <div class="c-top"><span class="c-id">${d.st.id}</span><span class="cat cat-${esc(d.latest?.cat)}">${esc(d.latest?.cat || '--')}</span>${d.alerts.length ? '<span class="c-haz" title="Active alert">⚠</span>' : ''}</div>
-      <div class="c-city">${esc(d.st.city)}</div>
+      <div class="c-city">${d.st.tx ? '<span class="tx-tag">TX</span>' : ''}${esc(d.st.city)}</div>
+      <div class="kalshi" title="${esc(settlementNote(d.st))}">KALSHI SETTLEMENT · ${d.st.cli}</div>
       <div class="c-mid"><span class="c-t">${f0(d.tempF)}°</span>
         <span class="c-hl" title="Forecast high (${esc(d.fcstHiLabel)}) / low"><b>H ${f0(d.fcstHi)}°</b><b>L ${f0(d.fcstLo)}°</b></span></div>
       <div class="c-stats"><span title="Forecast high minus low">spread ${f0(d.spread)}°</span><span title="Temperature minus dewpoint">T–Td ${f0(d.tdSpread)}°</span><span class="${d.delta > 0 ? 'up' : d.delta < 0 ? 'dn' : ''}" title="Observed minus NWS hourly forecast">Δ ${d.delta == null ? '--' : sgn(d.delta, 1)}</span></div>
@@ -75,7 +77,7 @@ export function renderPanel(el, d) {
   const alt = o?.altHpa != null ? `${(o.altHpa * 0.02953).toFixed(2)} inHg` : '--';
   el.innerHTML = `
     <header class="p-head">
-      <div><div class="p-id">${d.st.id}<span class="cat cat-${esc(o?.cat)}">${esc(o?.cat || '--')}</span></div><div class="p-city">${esc(d.st.city)}</div></div>
+      <div><div class="p-id">${d.st.id}<span class="cat cat-${esc(o?.cat)}">${esc(o?.cat || '--')}</span></div><div class="p-city">${d.st.tx ? '<span class="tx-tag">TX</span>' : ''}${esc(d.st.city)} · ${d.st.st} · WFO ${d.st.wfo}</div></div>
       <div class="p-temp" style="--c:${tempCSS(d.tempF)}">${f0(d.tempF)}<small>°F</small></div>
     </header>
     <div class="p-sub">${o ? `obs ${d.ageMin} min ago` : 'no obs'}${d.trend3h != null ? ` · 3h ${sgn(d.trend3h, 1)}°` : ''}${d.shortFcst ? ` · ${esc(d.shortFcst)}` : ''}</div>
@@ -98,6 +100,7 @@ export function renderPanel(el, d) {
       <div><dt>Wx</dt><dd>${esc(o?.wx || '—')}</dd></div>
     </dl>
     <pre class="raw">${esc(o?.raw || 'No METAR')}</pre>
+    <div class="settle"><span class="kalshi">KALSHI SETTLEMENT · ${d.st.cli}</span><p>${esc(settlementNote(d.st))} Obs-so-far high uses the same climate day; the official value is the CLI report, not METAR.</p></div>
     <section class="haz">
       <h4>Hazards</h4>
       ${d.alerts.length ? d.alerts.map((a) => `<div class="alert-row sev-${esc(a.severity)}"><b>${esc(a.event)}</b><span>${esc(a.headline || '')}</span></div>`).join('') : '<p class="muted">No active NWS alerts for this station’s zones.</p>'}

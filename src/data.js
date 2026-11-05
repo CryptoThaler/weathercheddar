@@ -4,20 +4,8 @@
 // then public CORS-proxy fallback).
 import * as fx from './fixtures.js';
 
-export const STATIONS = [
-  { id: 'KNYC', city: 'New York · Central Park', st: 'NY', lat: 40.7789, lon: -73.9692 },
-  { id: 'KJFK', city: 'New York · JFK', st: 'NY', lat: 40.6398, lon: -73.7789 },
-  { id: 'KLAX', city: 'Los Angeles', st: 'CA', lat: 33.9425, lon: -118.4081 },
-  { id: 'KSFO', city: 'San Francisco', st: 'CA', lat: 37.619, lon: -122.3749 },
-  { id: 'KORD', city: "Chicago · O'Hare", st: 'IL', lat: 41.9786, lon: -87.9048 },
-  { id: 'KDEN', city: 'Denver', st: 'CO', lat: 39.8467, lon: -104.6562 },
-  { id: 'KATL', city: 'Atlanta', st: 'GA', lat: 33.6367, lon: -84.4281 },
-  { id: 'KBOS', city: 'Boston', st: 'MA', lat: 42.3656, lon: -71.0096 },
-  { id: 'KMIA', city: 'Miami', st: 'FL', lat: 25.7932, lon: -80.2906 },
-  { id: 'KDFW', city: 'Dallas / Fort Worth', st: 'TX', lat: 32.8968, lon: -97.038 },
-  { id: 'KSAT', city: 'San Antonio', st: 'TX', lat: 29.5337, lon: -98.4698 },
-  { id: 'KAUS', city: 'Austin', st: 'TX', lat: 30.1945, lon: -97.6699 },
-];
+import { STATIONS } from './stations.js';
+export { STATIONS };
 
 const IDS = STATIONS.map((s) => s.id).join(',');
 export const METAR_URL = `https://aviationweather.gov/api/data/metar?ids=${IDS}&format=json`;
@@ -204,7 +192,7 @@ export async function loadNws(st) {
 }
 
 export async function loadAlerts() {
-  const areas = [...new Set(STATIONS.map((s) => s.st))].join(',');
+  const areas = [...new Set([...STATIONS.map((s) => s.st), 'DC'])].join(','); // KDCA sits on the VA/DC line
   const j = LIVE ? await fetchJSON(`${NWS}/alerts/active?area=${areas}`, { headers: NWS_HEADERS }) : fx.alertsFC();
   return (j?.features || []).map((f) => ({
     id: f.id,

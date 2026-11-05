@@ -8,7 +8,7 @@ import gsap from 'gsap';
 import { tempRGB } from './derive.js';
 
 const D2R = Math.PI / 180;
-const MAX = 16; // max stations in uniform arrays
+const MAX = 32; // max stations in uniform arrays
 const PER = 260; // particles per station
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -200,7 +200,7 @@ export function createGlobe(container, { onSelect } = {}) {
     orb.add(halo);
 
     const el = document.createElement('button');
-    el.className = 'lbl';
+    el.className = st.tx ? 'lbl tx' : 'lbl';
     el.innerHTML = `<b>${st.id}</b><span>--°</span>`;
     el.addEventListener('click', (e) => (e.stopPropagation(), onSelect?.(st.id)));
     const label = new CSS2DObject(el);
@@ -209,15 +209,20 @@ export function createGlobe(container, { onSelect } = {}) {
 
     stationGroup.add(g);
     pickables.push(orb);
-    const node = { st, i, g, col, orb, halo, hazard, label, el, color, normal, h: { v: 0.03 }, alive: { v: 0 }, hasAlert: false };
+    const node = { st, i, g, col, orb, halo, hazard, label, el, color, normal, h: { v: 0.03 }, alive: { v: 0 }, hasAlert: false, shown: true };
     nodes.set(st.id, node);
     return node;
   }
 
-  function updateStations(list) {
+  // shown: optional Set of station ids passing the active filter; others are dimmed.
+  function updateStations(list, shown) {
     list.forEach((d, i) => {
       if (i >= MAX) return;
       const n = ensureNode(d.st, i);
+      n.shown = !shown || shown.has(d.st.id);
+      n.orb.material.transparent = n.col.material.transparent = true;
+      gsap.to([n.orb.material, n.halo.material], { opacity: n.shown ? 1 : 0.06, duration: 0.6 });
+      gsap.to(n.col.material, { opacity: n.shown ? 0.6 : 0.04, duration: 0.6 });
       const f = d.tempF;
       const [r, g, b] = tempRGB(f);
       const h = f == null ? 0.02 : 0.03 + Math.max(0, Math.min(1, (f + 10) / 115)) * 0.13;
@@ -233,9 +238,11 @@ export function createGlobe(container, { onSelect } = {}) {
         },
       });
       uWind[i] = Math.min(1, (d.latest?.wspd ?? 5) / 30);
-      gsap.to(n.alive, { v: f == null ? 0.15 : 1, duration: 1, onUpdate: () => (uAlive[i] = n.alive.v) });
-      n.hasAlert = d.alerts.length > 0;
-      n.el.querySelector('span').textContent = f == null ? '--°' : `${Math.round(f)}°`;
+      gsap.to(n.alive, { v: !n.shown ? 0 : f == null ? 0.15 : 1, duration: 1, onUpdate: () => (uAlive[i] = n.alive.v) });
+      n.hasAlert = n.shown && d.alerts.length > 0;
+      const txt = f == null ? '--°' : `${Math.round(f)}°`;
+      const span = n.el.querySelector('span');
+      if (span.textContent !== txt) (span.textContent = txt), (n.size = null);
       n.el.classList.toggle('alert', n.hasAlert);
       n.el.style.setProperty('--c', `rgb(${[r, g, b].map((v) => Math.round(v * 255))})`);
     });
@@ -281,7 +288,30 @@ export function createGlobe(container, { onSelect } = {}) {
       },
     });
   }
+  // Screen-space label declutter: selected > alerts > Texas > rest; hide overlaps.
+  let selId = null;
+  const wp = new THREE.Vector3();
+  function declutter() {
+    const W = container.clientWidth, Hh = container.clientHeight, placed = [];
+    const order = [...nodes.values()].sort((a, b) => rank(b) - rank(a));
+    for (const n of order) {
+      let vis = n.shown && tmp.copy(n.normal).dot(camDir) > 0.18;
+      if (vis) {
+        n.orb.getWorldPosition(wp).project(camera);
+        const x = (wp.x * 0.5 + 0.5) * W, y = (-wp.y * 0.5 + 0.5) * Hh;
+        if (!n.size && n.el.offsetWidth) n.size = [n.el.offsetWidth, n.el.offsetHeight]; // measured once per text change
+        const [w, h] = n.size || [64, 18];
+        const box = [x + 4, y - h / 2, x + 8 + w, y + h / 2];
+        vis = n.st.id === selId || !placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]);
+        if (vis) placed.push(box);
+      }
+      n.label.visible = vis;
+    }
+  }
+  const rank = (n) => (n.st.id === selId ? 4 : 0) + (n.hasAlert ? 2 : 0) + (n.st.tx ? 1 : 0);
+
   const focus = (id) => {
+    selId = id;
     const n = nodes.get(id);
     if (n) flyTo(n.normal, 1.75);
     for (const [k, v] of nodes) v.el.classList.toggle('sel', k === id);
@@ -312,10 +342,9 @@ export function createGlobe(container, { onSelect } = {}) {
     pMat.uniforms.uTime.value = t;
     controls.update();
     camDir.copy(camera.position).normalize();
+    declutter();
     for (const n of nodes.values()) {
-      const facing = tmp.copy(n.normal).dot(camDir) > 0.18;
-      n.label.visible = facing;
-      n.halo.material.opacity = 0.55 + Math.sin(t * 2 + n.i) * 0.2;
+      if (n.shown) n.halo.material.opacity = 0.55 + Math.sin(t * 2 + n.i) * 0.2;
       if (n.hasAlert) {
         const k = (t * 0.7 + n.i * 0.1) % 1;
         n.hazard.scale.setScalar(0.016 + k * 0.04);

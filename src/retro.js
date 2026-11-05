@@ -15,17 +15,19 @@ function wind(o) {
 }
 
 const COLS = [
-  ['STN', 5], ['CITY', 22], ['TMP', 5, 1], ['DEW', 5, 1], ['WIND', 10], ['VIS', 5, 1], ['ALT', 6, 1],
-  ['CAT', 5], ['FC/NOW', 7, 1], ['Δ', 5, 1], ['HI.OBS', 7, 1], ['HI.FC', 6, 1], ['GAP', 5, 1], ['HAZ', 4],
+  ['STN', 5], ['CITY', 20], ['SETTLE', 7], ['TMP', 5, 1], ['DEW', 5, 1], ['T-TD', 5, 1], ['WIND', 10], ['VIS', 5, 1], ['ALT', 6, 1],
+  ['CAT', 5], ['FC/NOW', 7, 1], ['Δ', 5, 1], ['HI.OBS', 7, 1], ['HI.FC', 6, 1], ['LO.FC', 6, 1], ['GAP', 5, 1], ['HAZ', 4],
 ];
 
 function rowCells(d) {
   const o = d.latest;
   return [
     d.st.id,
-    d.st.city.toUpperCase(),
+    (d.st.tx ? '★' : '') + d.st.city.toUpperCase(),
+    d.st.cli,
     f0(d.tempF, 'F'),
     f0(d.dewF, 'F'),
+    f0(d.tdSpread),
     wind(o),
     o?.visRaw ?? '--',
     o?.altHpa != null ? (o.altHpa * 0.02953).toFixed(2) : '--',
@@ -34,6 +36,7 @@ function rowCells(d) {
     sgn(d.delta),
     f0(d.obsHi, 'F'),
     f0(d.todayHi, 'F'),
+    f0(d.fcstLo, 'F'),
     sgn(d.hiGap),
     d.alerts.length ? `!${d.alerts.length}` : '',
   ];
@@ -78,7 +81,7 @@ export function createRetro(root, { onSelect } = {}) {
   }
 
   return {
-    update(list, quakes, sel) {
+    update(list, quakes, sel, shown) {
       for (const d of list) {
         let r = rows.get(d.st.id);
         if (!r) {
@@ -91,13 +94,16 @@ export function createRetro(root, { onSelect } = {}) {
           rows.set(d.st.id, r);
         }
         r.classList.toggle('sel', d.st.id === sel);
+        r.classList.toggle('tx', !!d.st.tx);
+        r.hidden = !!shown && !shown.has(d.st.id);
         r.dataset.cat = d.latest?.cat || '';
         r.classList.toggle('haz', d.alerts.length > 0);
         const cells = rowCells(d);
         [...r.children].forEach((s, i) => flap(s, pad(cells[i], COLS[i][1], COLS[i][2])));
       }
-      root.querySelector('.r-raw').textContent = list.map((d) => d.latest?.raw || `${d.st.id} ---- NO DATA ----`).join('\n');
-      const haz = list.flatMap((d) => d.alerts.map((a) => `${d.st.id}  ${pad(a.event?.toUpperCase(), 28)} ${a.severity || ''}`));
+      const vis = shown ? list.filter((d) => shown.has(d.st.id)) : list;
+      root.querySelector('.r-raw').textContent = vis.map((d) => d.latest?.raw || `${d.st.id} ---- NO DATA ----`).join('\n');
+      const haz = vis.flatMap((d) => d.alerts.map((a) => `${d.st.id}  ${pad(a.event?.toUpperCase(), 28)} ${a.severity || ''}`));
       root.querySelector('.r-haz').textContent = haz.length ? [...new Set(haz)].join('\n') : 'NO ACTIVE ALERTS FOR TRACKED STATIONS';
       root.querySelector('.r-quake').textContent =
         (quakes || [])

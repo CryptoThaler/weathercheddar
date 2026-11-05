@@ -11,13 +11,34 @@ export function localDay(t, tz) {
   }
 }
 
+// NWS climate reports (what Kalshi settles on) use local STANDARD time all year:
+// during DST the climate day runs 01:00–01:00 clock time.
+const stdOff = new Map();
+function offsetMin(t, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(t).map((x) => [x.type, x.value]));
+  return Math.round((Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(t / 60e3) * 60e3) / 60e3);
+}
+export function climateDay(t, tz) {
+  if (!tz) return localDay(t, tz);
+  try {
+    if (!stdOff.has(tz)) {
+      const y = new Date().getUTCFullYear();
+      stdOff.set(tz, Math.min(offsetMin(Date.UTC(y, 0, 15), tz), offsetMin(Date.UTC(y, 6, 15), tz)));
+    }
+    return new Date(t + stdOff.get(tz) * 60e3).toISOString().slice(0, 10);
+  } catch {
+    return localDay(t, tz);
+  }
+}
+
 export function derive(st, obs = [], nws = null, alerts = [], now = Date.now()) {
   const latest = obs[obs.length - 1] || null;
-  const tz = nws?.tz;
+  const tz = nws?.tz || st.tz;
   const today = localDay(now, tz);
   const series = obs.filter((o) => o.tempC != null && o.t >= now - 24 * H).map((o) => ({ t: o.t, f: cToF(o.tempC) }));
 
-  const todays = series.filter((p) => localDay(p.t, tz) === today);
+  const cday = climateDay(now, tz);
+  const todays = series.filter((p) => climateDay(p.t, tz) === cday);
   const obsHi = todays.length ? Math.max(...todays.map((p) => p.f)) : null;
   const obsLo = todays.length ? Math.min(...todays.map((p) => p.f)) : null;
 

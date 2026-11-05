@@ -4,24 +4,41 @@
 // Times are generated relative to "now" so the 24h series always looks current;
 // each refresh tick advances a seed so values drift like a live feed.
 
+import { BY_ID } from './stations.js';
+
 const H = 3600e3;
 
 // Sample conditions for an early-November day. hi/lo in °F; td = temp–dewpoint spread °F;
 // bias = how far obs run vs the forecast curve (°F) — gives the board realistic "gap" variety.
-export const FIX = {
-  KNYC: { name: 'New York/Central Park', tz: 'America/New_York', hi: 58, lo: 46, td: 12, bias: 0.8, wdir: 270, wspd: 10, wgst: 0, vis: 10, clouds: [['FEW', 5000]], wx: '', hpa: 1016.6, short: 'Mostly Sunny', pop: 5 },
-  KJFK: { name: 'New York/JFK Intl', tz: 'America/New_York', hi: 57, lo: 47, td: 11, bias: 0.3, wdir: 260, wspd: 14, wgst: 22, vis: 10, clouds: [['SCT', 4500]], wx: '', hpa: 1016.3, short: 'Mostly Sunny', pop: 5 },
-  KLAX: { name: 'Los Angeles Intl', tz: 'America/Los_Angeles', hi: 72, lo: 57, td: 9, bias: -1.6, wdir: 250, wspd: 9, wgst: 0, vis: 7, clouds: [['BKN', 1500]], wx: '', hpa: 1013.2, short: 'Patchy Fog then Sunny', pop: 0 },
-  KSFO: { name: 'San Francisco Intl', tz: 'America/Los_Angeles', hi: 64, lo: 51, td: 10, bias: 0.2, wdir: 290, wspd: 16, wgst: 0, vis: 10, clouds: [['FEW', 2000]], wx: '', hpa: 1015.9, short: 'Sunny', pop: 0 },
-  KORD: { name: "Chicago O'Hare Intl", tz: 'America/Chicago', hi: 49, lo: 38, td: 7, bias: -0.9, wdir: 310, wspd: 18, wgst: 29, vis: 10, clouds: [['OVC', 2500]], wx: '', hpa: 1009.8, short: 'Cloudy and Breezy', pop: 15, alert: ['Wind Advisory', 'Moderate', 'Wind Advisory until 7 PM CST — NW gusts to 45 mph'] },
-  KDEN: { name: 'Denver Intl', tz: 'America/Denver', hi: 38, lo: 25, td: 2, bias: -1.2, wdir: 20, wspd: 8, wgst: 0, vis: 1.5, clouds: [['OVC', 800]], wx: '-SN BR', hpa: 1021.0, short: 'Light Snow', pop: 80, alert: ['Winter Weather Advisory', 'Moderate', 'Winter Weather Advisory until 11 PM MST — 2–5 in. of snow'] },
-  KATL: { name: 'Atlanta Hartsfield-Jackson', tz: 'America/New_York', hi: 70, lo: 52, td: 14, bias: 1.1, wdir: 180, wspd: 6, wgst: 0, vis: 10, clouds: [['SCT', 6000]], wx: '', hpa: 1018.0, short: 'Partly Sunny', pop: 10 },
-  KBOS: { name: 'Boston Logan Intl', tz: 'America/New_York', hi: 53, lo: 43, td: 13, bias: 0.5, wdir: 280, wspd: 12, wgst: 0, vis: 10, clouds: [['FEW', 4000], ['BKN', 25000]], wx: '', hpa: 1014.9, short: 'Mostly Sunny', pop: 5 },
-  KMIA: { name: 'Miami Intl', tz: 'America/New_York', hi: 84, lo: 74, td: 7, bias: 0.4, wdir: 90, wspd: 12, wgst: 0, vis: 10, clouds: [['SCT', 2500]], wx: '', hpa: 1015.2, short: 'Scattered Showers', pop: 30, alert: ['Rip Current Statement', 'Moderate', 'High rip current risk through this evening'] },
-  KDFW: { name: 'Dallas/Fort Worth Intl', tz: 'America/Chicago', hi: 76, lo: 58, td: 12, bias: 1.9, wdir: 170, wspd: 14, wgst: 21, vis: 10, clouds: [['BKN', 3500]], wx: '', hpa: 1011.4, short: 'Partly Sunny and Breezy', pop: 10 },
-  KSAT: { name: 'San Antonio Intl', tz: 'America/Chicago', hi: 81, lo: 62, td: 10, bias: 1.3, wdir: 160, wspd: 11, wgst: 0, vis: 10, clouds: [['SCT', 3000]], wx: '', hpa: 1011.9, short: 'Mostly Cloudy', pop: 10 },
-  KAUS: { name: 'Austin-Bergstrom Intl', tz: 'America/Chicago', hi: 80, lo: 59, td: 11, bias: -0.4, wdir: 170, wspd: 10, wgst: 0, vis: 10, clouds: [['BKN', 2800]], wx: '', hpa: 1012.1, short: 'Mostly Cloudy', pop: 15 },
+// Station metadata (tz, WFO, coordinates) lives in stations.js.
+const W = (wdir, wspd, wgst = 0) => ({ wdir, wspd, wgst });
+const RAW = {
+  KATL: { hi: 70, lo: 52, td: 14, bias: 1.1, ...W(180, 6), vis: 10, clouds: [['SCT', 6000]], wx: '', hpa: 1018.0, short: 'Partly Sunny', pop: 10 },
+  KAUS: { hi: 80, lo: 59, td: 11, bias: -0.4, ...W(170, 10), vis: 10, clouds: [['BKN', 2800]], wx: '', hpa: 1012.1, short: 'Mostly Cloudy', pop: 15 },
+  KBOS: { hi: 53, lo: 43, td: 13, bias: 0.5, ...W(280, 12), vis: 10, clouds: [['FEW', 4000], ['BKN', 25000]], wx: '', hpa: 1014.9, short: 'Mostly Sunny', pop: 5 },
+  KMDW: { hi: 50, lo: 39, td: 7, bias: -0.7, ...W(310, 18, 29), vis: 10, clouds: [['OVC', 2500]], wx: '', hpa: 1009.6, short: 'Cloudy and Breezy', pop: 15, alert: ['Wind Advisory', 'Moderate', 'Wind Advisory until 7 PM CST — NW gusts to 45 mph'] },
+  KDFW: { hi: 76, lo: 58, td: 12, bias: 1.9, ...W(170, 14, 21), vis: 10, clouds: [['BKN', 3500]], wx: '', hpa: 1011.4, short: 'Partly Sunny and Breezy', pop: 10 },
+  KDEN: { hi: 38, lo: 25, td: 2, bias: -1.2, ...W(20, 8), vis: 1.5, clouds: [['OVC', 800]], wx: '-SN BR', hpa: 1021.0, short: 'Light Snow', pop: 80, alert: ['Winter Weather Advisory', 'Moderate', 'Winter Weather Advisory until 11 PM MST — 2–5 in. of snow'] },
+  KHOU: { hi: 82, lo: 66, td: 8, bias: 0.9, ...W(150, 12), vis: 10, clouds: [['SCT', 2200], ['BKN', 4000]], wx: '', hpa: 1013.0, short: 'Partly Sunny', pop: 20 },
+  KLAS: { hi: 72, lo: 53, td: 40, bias: 0.6, ...W(200, 7), vis: 10, clouds: [['FEW', 20000]], wx: '', hpa: 1012.4, short: 'Sunny', pop: 0 },
+  KLAX: { hi: 72, lo: 57, td: 9, bias: -1.6, ...W(250, 9), vis: 7, clouds: [['BKN', 1500]], wx: '', hpa: 1013.2, short: 'Patchy Fog then Sunny', pop: 0 },
+  KSDF: { hi: 62, lo: 45, td: 14, bias: 0.2, ...W(230, 10), vis: 10, clouds: [['SCT', 5000]], wx: '', hpa: 1015.7, short: 'Partly Sunny', pop: 5 },
+  KMIA: { hi: 84, lo: 74, td: 7, bias: 0.4, ...W(90, 12), vis: 10, clouds: [['SCT', 2500]], wx: '', hpa: 1015.2, short: 'Scattered Showers', pop: 30, alert: ['Rip Current Statement', 'Moderate', 'High rip current risk through this evening'] },
+  KMSP: { hi: 44, lo: 31, td: 9, bias: -0.8, ...W(320, 14, 22), vis: 10, clouds: [['BKN', 3000]], wx: '', hpa: 1011.8, short: 'Mostly Cloudy', pop: 10 },
+  KMSY: { hi: 81, lo: 65, td: 9, bias: 0.7, ...W(160, 9), vis: 10, clouds: [['SCT', 3000]], wx: '', hpa: 1014.1, short: 'Partly Sunny', pop: 15 },
+  KNYC: { hi: 58, lo: 46, td: 12, bias: 0.8, ...W(270, 10), vis: 10, clouds: [['FEW', 5000]], wx: '', hpa: 1016.6, short: 'Mostly Sunny', pop: 5 },
+  KEWR: { hi: 59, lo: 45, td: 13, bias: 1.0, ...W(280, 13), vis: 10, clouds: [['FEW', 5000]], wx: '', hpa: 1016.4, short: 'Mostly Sunny', pop: 5 },
+  KOKC: { hi: 70, lo: 48, td: 18, bias: 1.4, ...W(190, 16, 24), vis: 10, clouds: [['FEW', 25000]], wx: '', hpa: 1010.2, short: 'Sunny and Breezy', pop: 0 },
+  KPHL: { hi: 60, lo: 45, td: 13, bias: 0.6, ...W(270, 11), vis: 10, clouds: [['FEW', 4500]], wx: '', hpa: 1016.9, short: 'Mostly Sunny', pop: 5 },
+  KPHX: { hi: 82, lo: 58, td: 38, bias: 0.9, ...W(90, 5), vis: 10, clouds: [['CLR']], wx: '', hpa: 1012.0, short: 'Sunny', pop: 0 },
+  KSAT: { hi: 81, lo: 62, td: 10, bias: 1.3, ...W(160, 11), vis: 10, clouds: [['SCT', 3000]], wx: '', hpa: 1011.9, short: 'Mostly Cloudy', pop: 10 },
+  KSAN: { hi: 70, lo: 58, td: 12, bias: -0.3, ...W(270, 8), vis: 10, clouds: [['SCT', 1500]], wx: '', hpa: 1014.0, short: 'Mostly Sunny', pop: 0 },
+  KSFO: { hi: 64, lo: 51, td: 10, bias: 0.2, ...W(290, 16), vis: 10, clouds: [['FEW', 2000]], wx: '', hpa: 1015.9, short: 'Sunny', pop: 0 },
+  KSEA: { hi: 54, lo: 46, td: 4, bias: -0.5, ...W(190, 15, 24), vis: 6, clouds: [['BKN', 1800], ['OVC', 3500]], wx: '-RA', hpa: 1004.8, short: 'Rain', pop: 90, alert: ['Flood Watch', 'Moderate', 'Flood Watch through Friday morning — atmospheric river rainfall'] },
+  KTTN: { hi: 57, lo: 42, td: 14, bias: 0.4, ...W(280, 10), vis: 10, clouds: [['FEW', 5000]], wx: '', hpa: 1016.7, short: 'Mostly Sunny', pop: 5 },
+  KDCA: { hi: 63, lo: 48, td: 15, bias: 1.2, ...W(290, 9), vis: 10, clouds: [['FEW', 6000]], wx: '', hpa: 1017.2, short: 'Sunny', pop: 0 },
 };
+export const FIX = Object.fromEntries(Object.entries(RAW).map(([id, v]) => [id, { ...v, tz: BY_ID[id].tz, wfo: BY_ID[id].wfo, name: BY_ID[id].city }]));
 
 // [mag, place, lat, lon, depth km, hours ago]
 const QUAKES = [
@@ -82,7 +99,7 @@ function metarRow(id, s, t, f, seed) {
   const z = (n, w = 2) => String(n).padStart(w, '0');
   const tc = (v) => (v < 0 ? 'M' : '') + z(Math.abs(Math.round(v)));
   const tg = (v) => (v < 0 ? '1' : '0') + z(Math.round(Math.abs(v) * 10), 3);
-  const sky = s.clouds.map(([cv, b]) => `${cv}${z(b / 100, 3)}`).join(' ');
+  const sky = s.clouds.map(([cv, b]) => (b == null ? cv : `${cv}${z(b / 100, 3)}`)).join(' ');
   const visS = s.vis >= 10 ? '10SM' : `${String(s.vis).replace('1.5', '1 1/2')}SM`;
   const raw = [
     id,
@@ -108,7 +125,7 @@ function metarRow(id, s, t, f, seed) {
     wgst,
     visib: s.vis >= 10 ? '10+' : s.vis,
     altim: hpa,
-    clouds: s.clouds.map(([cover, base]) => ({ cover, base })),
+    clouds: s.clouds.map(([cover, base]) => ({ cover, base: base ?? null })),
     wxString: s.wx || null,
     rawOb: raw,
     name: s.name,
@@ -178,7 +195,7 @@ export function nwsFor(id, now = Date.now()) {
     start = t;
   }
   return {
-    point: { forecastZone: `fixture:${id}`, timeZone: s.tz, gridId: 'FIX' },
+    point: { forecastZone: `fixture:${id}`, timeZone: s.tz, gridId: s.wfo },
     hourly: { properties: { periods: hourly } },
     daily: { properties: { periods: daily } },
   };

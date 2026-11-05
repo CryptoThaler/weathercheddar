@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { STATIONS, LIVE, advanceFixtures, loadMetar, loadNws, loadAlerts, loadQuakes, routeFor } from './data.js';
 import { derive } from './derive.js';
 import { renderCards, renderPanel, renderQuakes } from './ui.js';
+import { FILTERS, matchesFilter } from './stations.js';
 import { createRetro } from './retro.js';
 
 const qs = new URLSearchParams(location.search);
@@ -21,6 +22,7 @@ const state = {
   alerts: [],
   quakes: [],
   sel: localStorage.getItem('wc_sel') || 'KNYC',
+  filter: localStorage.getItem('wc_filter') || 'all',
   status: { metar: null, nws: null, alerts: null, usgs: null },
   nextAt: 0,
 };
@@ -54,17 +56,28 @@ function derived() {
   return STATIONS.map((st) => derive(st, state.obs[st.id], state.nws[st.id], state.alerts, now));
 }
 
+let quakesDrawn = null;
+function renderFilters(list) {
+  $('#filters').innerHTML = FILTERS.map(([k, label]) => {
+    const n = list.filter((d) => matchesFilter(d, k)).length;
+    return `<button class="flt ${k === state.filter ? 'on' : ''} ${k === 'tx' ? 'flt-tx' : ''}" data-f="${k}" aria-pressed="${k === state.filter}">${label}<span>${n}</span></button>`;
+  }).join('');
+}
+
 function render() {
   const list = derived();
+  const vis = list.filter((d) => matchesFilter(d, state.filter));
+  const shown = new Set(vis.map((d) => d.st.id));
   const sel = list.find((d) => d.st.id === state.sel) || list[0];
-  renderCards($('#cards'), list, state.sel);
+  renderFilters(list);
+  renderCards($('#cards'), vis, state.sel);
   renderPanel($('#panel-body'), sel);
   renderQuakes($('#quakes'), state.quakes);
-  globe?.updateStations(list);
-  globe?.updateQuakes(state.quakes);
-  retro.update(list, state.quakes, state.sel);
-  const nAlerts = new Set(list.flatMap((d) => d.alerts.map((a) => a.id))).size;
-  const hot = list.filter((d) => d.hiGap != null).sort((a, b) => b.hiGap - a.hiGap)[0];
+  globe?.updateStations(list, shown);
+  if (globe && quakesDrawn !== state.quakes) (globe.updateQuakes(state.quakes), (quakesDrawn = state.quakes));
+  retro.update(list, state.quakes, state.sel, shown);
+  const nAlerts = new Set(vis.flatMap((d) => d.alerts.map((a) => a.id))).size;
+  const hot = vis.filter((d) => d.hiGap != null).sort((a, b) => b.hiGap - a.hiGap)[0];
   $('#stat-alerts').textContent = nAlerts;
   $('#stat-quakes').textContent = state.quakes.length;
   $('#stat-max').textContent = state.quakes.length ? `M${Math.max(...state.quakes.map((q) => q.mag)).toFixed(1)}` : '--';
@@ -153,6 +166,14 @@ document.addEventListener('keydown', (e) => {
 $('#cards').addEventListener('click', (e) => {
   const b = e.target.closest('[data-id]');
   if (b) select(b.dataset.id);
+});
+$('#filters').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-f]');
+  if (!b) return;
+  state.filter = b.dataset.f;
+  try { localStorage.setItem('wc_filter', state.filter); } catch {}
+  render();
+  gsap.fromTo('#cards .card', { y: 12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.025, duration: 0.35, ease: 'power2.out' });
 });
 $('#home').addEventListener('click', () => globe?.goHome());
 $('#panel-close').addEventListener('click', () => $('#panel').classList.remove('open'));

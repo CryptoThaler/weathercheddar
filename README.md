@@ -3,14 +3,33 @@
 **METAR-FIRST AVIATION CONSOLE**
 *Actionable Intelligence as a Service for Making That Kalshi Cheese*
 
-A client-side weather dashboard for 12 major US airports. It has two views:
+A client-side weather dashboard for the 24 Kalshi climate-contract stations. It has two views:
 
 - **3D globe** (default): a Three.js globe with coastlines and US state borders. Each station is an orb on a temperature column, with temperature-colored particles orbiting it (spin speed follows the wind). USGS earthquakes show as pulsing rings, and stations with NWS alerts get a red hazard ring. Camera moves and data changes animate with GSAP.
 - **Retro board**: the original ASCII / split-flap station board, plus raw METARs, hazards, and recent quakes.
 
 Toggle with the **RETRO BOARD / 3D GLOBE** button or the **R** key. **H** resets the globe. The view you pick is remembered.
 
-Stations: KNYC, KJFK, KLAX, KSFO, KORD, KDEN, KATL, KBOS, KMIA, KDFW, KSAT, KAUS.
+## Stations (Kalshi climate contracts)
+
+| ICAO | City | WFO / CLI | | ICAO | City | WFO / CLI |
+|---|---|---|---|---|---|---|
+| KATL | Atlanta | FFC / CLIATL | | KMSY | New Orleans | LIX / CLIMSY |
+| **KAUS** | Austin (TX) | EWX / CLIAUS | | KNYC | NYC Central Park | OKX / CLINYC |
+| KBOS | Boston | BOX / CLIBOS | | KEWR | Newark | OKX / CLIEWR |
+| KMDW | Chicago Midway | LOT / CLIMDW | | KOKC | Oklahoma City | OUN / CLIOKC |
+| **KDFW** | Dallas/Fort Worth (TX) | FWD / CLIDFW | | KPHL | Philadelphia | PHI / CLIPHL |
+| KDEN | Denver | BOU / CLIDEN | | KPHX | Phoenix | PSR / CLIPHX |
+| **KHOU** | Houston Hobby (TX) | HGX / CLIHOU | | **KSAT** | San Antonio (TX) | EWX / CLISAT |
+| KLAS | Las Vegas | VEF / CLILAS | | KSAN | San Diego | SGX / CLISAN |
+| KLAX | Los Angeles | LOX / CLILAX | | KSFO | San Francisco | MTR / CLISFO |
+| KSDF | Louisville | LMK / CLISDF | | KSEA | Seattle | SEW / CLISEA |
+| KMIA | Miami | MFL / CLIMIA | | KTTN | Trenton | PHI / CLITTN |
+| KMSP | Minneapolis | MPX / CLIMSP | | KDCA | Washington National | LWX / CLIDCA |
+
+Each card carries a **KALSHI SETTLEMENT · CLIxxx** badge, with the full settlement note in its tooltip and in the detail panel. The four Texas stations (KAUS, KDFW, KHOU, KSAT) get orange cards, labels, and retro rows (★). Filter bar: All · Texas · East · Central · Mountain · West · Alerts. The filter applies to the cards, the retro board, and the globe (filtered-out stations are dimmed).
+
+Station metadata lives in `src/stations.js`. The WFO and `CLI` + 3-letter product IDs follow standard NWS naming, but **confirm each contract's settlement source in its rules on Kalshi** before trading.
 
 ## What each station shows
 
@@ -21,7 +40,7 @@ Stations: KNYC, KJFK, KLAX, KSFO, KORD, KDEN, KATL, KBOS, KMIA, KDFW, KSAT, KAUS
 | spread | Forecast high minus low |
 | T–Td | Temperature minus dewpoint (fog and low-ceiling risk) |
 | Δ | Observed minus the NWS hourly forecast for the current hour |
-| Today hi · obs so far / gap | Highest METAR temp of the local day vs today's forecast high |
+| Today hi · obs so far / gap | Highest METAR temp of the **climate day** (midnight–midnight local *standard* time, as in the CLI report; during DST this is 01:00–01:00 clock time) vs today's forecast high |
 | 24h chart | Past 24h of METAR (solid gold) and the next 24h of NWS hourly forecast (dashed) |
 | Flight cat | VFR / MVFR / IFR / LIFR, computed from ceiling and visibility |
 
@@ -31,7 +50,7 @@ Stations: KNYC, KJFK, KLAX, KSFO, KORD, KDEN, KATL, KBOS, KMIA, KDFW, KSAT, KAUS
 
 ### Fixture mode (default, makes no network requests)
 
-`src/fixtures.js` holds hard-coded sample conditions for each station: forecast hi/lo, wind, sky, visibility, weather, pressure, NWS alerts, and 21 USGS M2.5+ events. On every refresh it generates responses in the **raw shape of each real API**:
+`src/fixtures.js` holds hard-coded sample conditions for all 24 stations: forecast hi/lo, wind, sky, visibility, weather, pressure, NWS alerts, and 21 USGS M2.5+ events. On every refresh it generates responses in the **raw shape of each real API**:
 
 - `aviationweather.gov/api/data/metar` JSON rows, including a matching `rawOb` string
 - `api.weather.gov` hourly and 12h forecast `periods`, plus an alerts FeatureCollection
@@ -74,6 +93,7 @@ Everything is bundled, including fonts (via @fontsource) and map geometry (world
 ```
 index.html          shell + branding
 src/main.js         state, refresh loop, mode toggle (GSAP crossfade)
+src/stations.js     24 Kalshi stations: coords, tz, WFO, CLI id, Texas flag, region filters
 src/data.js         fetch/CORS fallback, METAR/NWS/USGS parsers, fixture switch
 src/fixtures.js     sample data emitted in raw API shapes
 src/derive.js       trader metrics (Δ, hi gap, spread, series) + temperature colour ramp
