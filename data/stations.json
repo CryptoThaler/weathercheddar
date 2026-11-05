@@ -1,0 +1,368 @@
+{
+  "schema": "weathercheddar/stations@1",
+  "description": "Kalshi daily-temperature climate-contract stations. wfo = NWS office issuing the Daily Climate Report (CLI). Verify settlement source in each Kalshi contract rulebook.",
+  "climate_day": "midnight-to-midnight local standard time (LST); during DST this is 01:00-01:00 clock time",
+  "stations": [
+    {
+      "icao": "KATL",
+      "name": "Atlanta",
+      "state": "GA",
+      "lat": 33.6367,
+      "lon": -84.4281,
+      "tz": "America/New_York",
+      "wfo": "FFC",
+      "cli": "CLIATL",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "GA"
+      ]
+    },
+    {
+      "icao": "KAUS",
+      "name": "Austin",
+      "state": "TX",
+      "lat": 30.1945,
+      "lon": -97.6699,
+      "tz": "America/Chicago",
+      "wfo": "EWX",
+      "cli": "CLIAUS",
+      "region": "central",
+      "texas": true,
+      "nws_alert_area": [
+        "TX"
+      ]
+    },
+    {
+      "icao": "KBOS",
+      "name": "Boston",
+      "state": "MA",
+      "lat": 42.3656,
+      "lon": -71.0096,
+      "tz": "America/New_York",
+      "wfo": "BOX",
+      "cli": "CLIBOS",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "MA"
+      ]
+    },
+    {
+      "icao": "KMDW",
+      "name": "Chicago Midway",
+      "state": "IL",
+      "lat": 41.7868,
+      "lon": -87.7522,
+      "tz": "America/Chicago",
+      "wfo": "LOT",
+      "cli": "CLIMDW",
+      "region": "central",
+      "texas": false,
+      "nws_alert_area": [
+        "IL"
+      ]
+    },
+    {
+      "icao": "KDFW",
+      "name": "Dallas / Fort Worth",
+      "state": "TX",
+      "lat": 32.8968,
+      "lon": -97.038,
+      "tz": "America/Chicago",
+      "wfo": "FWD",
+      "cli": "CLIDFW",
+      "region": "central",
+      "texas": true,
+      "nws_alert_area": [
+        "TX"
+      ]
+    },
+    {
+      "icao": "KDEN",
+      "name": "Denver",
+      "state": "CO",
+      "lat": 39.8467,
+      "lon": -104.6562,
+      "tz": "America/Denver",
+      "wfo": "BOU",
+      "cli": "CLIDEN",
+      "region": "mountain",
+      "texas": false,
+      "nws_alert_area": [
+        "CO"
+      ]
+    },
+    {
+      "icao": "KHOU",
+      "name": "Houston Hobby",
+      "state": "TX",
+      "lat": 29.6454,
+      "lon": -95.2789,
+      "tz": "America/Chicago",
+      "wfo": "HGX",
+      "cli": "CLIHOU",
+      "region": "central",
+      "texas": true,
+      "nws_alert_area": [
+        "TX"
+      ]
+    },
+    {
+      "icao": "KLAS",
+      "name": "Las Vegas",
+      "state": "NV",
+      "lat": 36.0801,
+      "lon": -115.1522,
+      "tz": "America/Los_Angeles",
+      "wfo": "VEF",
+      "cli": "CLILAS",
+      "region": "west",
+      "texas": false,
+      "nws_alert_area": [
+        "NV"
+      ]
+    },
+    {
+      "icao": "KLAX",
+      "name": "Los Angeles",
+      "state": "CA",
+      "lat": 33.9425,
+      "lon": -118.4081,
+      "tz": "America/Los_Angeles",
+      "wfo": "LOX",
+      "cli": "CLILAX",
+      "region": "west",
+      "texas": false,
+      "nws_alert_area": [
+        "CA"
+      ]
+    },
+    {
+      "icao": "KSDF",
+      "name": "Louisville",
+      "state": "KY",
+      "lat": 38.1744,
+      "lon": -85.736,
+      "tz": "America/New_York",
+      "wfo": "LMK",
+      "cli": "CLISDF",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "KY"
+      ]
+    },
+    {
+      "icao": "KMIA",
+      "name": "Miami",
+      "state": "FL",
+      "lat": 25.7932,
+      "lon": -80.2906,
+      "tz": "America/New_York",
+      "wfo": "MFL",
+      "cli": "CLIMIA",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "FL"
+      ]
+    },
+    {
+      "icao": "KMSP",
+      "name": "Minneapolis",
+      "state": "MN",
+      "lat": 44.8848,
+      "lon": -93.2223,
+      "tz": "America/Chicago",
+      "wfo": "MPX",
+      "cli": "CLIMSP",
+      "region": "central",
+      "texas": false,
+      "nws_alert_area": [
+        "MN"
+      ]
+    },
+    {
+      "icao": "KMSY",
+      "name": "New Orleans",
+      "state": "LA",
+      "lat": 29.9934,
+      "lon": -90.258,
+      "tz": "America/Chicago",
+      "wfo": "LIX",
+      "cli": "CLIMSY",
+      "region": "central",
+      "texas": false,
+      "nws_alert_area": [
+        "LA"
+      ]
+    },
+    {
+      "icao": "KNYC",
+      "name": "NYC Central Park",
+      "state": "NY",
+      "lat": 40.7789,
+      "lon": -73.9692,
+      "tz": "America/New_York",
+      "wfo": "OKX",
+      "cli": "CLINYC",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "NY"
+      ]
+    },
+    {
+      "icao": "KEWR",
+      "name": "Newark",
+      "state": "NJ",
+      "lat": 40.6925,
+      "lon": -74.1687,
+      "tz": "America/New_York",
+      "wfo": "OKX",
+      "cli": "CLIEWR",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "NJ"
+      ]
+    },
+    {
+      "icao": "KOKC",
+      "name": "Oklahoma City",
+      "state": "OK",
+      "lat": 35.3931,
+      "lon": -97.6007,
+      "tz": "America/Chicago",
+      "wfo": "OUN",
+      "cli": "CLIOKC",
+      "region": "central",
+      "texas": false,
+      "nws_alert_area": [
+        "OK"
+      ]
+    },
+    {
+      "icao": "KPHL",
+      "name": "Philadelphia",
+      "state": "PA",
+      "lat": 39.8721,
+      "lon": -75.2411,
+      "tz": "America/New_York",
+      "wfo": "PHI",
+      "cli": "CLIPHL",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "PA"
+      ]
+    },
+    {
+      "icao": "KPHX",
+      "name": "Phoenix",
+      "state": "AZ",
+      "lat": 33.4342,
+      "lon": -112.0116,
+      "tz": "America/Phoenix",
+      "wfo": "PSR",
+      "cli": "CLIPHX",
+      "region": "mountain",
+      "texas": false,
+      "nws_alert_area": [
+        "AZ"
+      ]
+    },
+    {
+      "icao": "KSAT",
+      "name": "San Antonio",
+      "state": "TX",
+      "lat": 29.5337,
+      "lon": -98.4698,
+      "tz": "America/Chicago",
+      "wfo": "EWX",
+      "cli": "CLISAT",
+      "region": "central",
+      "texas": true,
+      "nws_alert_area": [
+        "TX"
+      ]
+    },
+    {
+      "icao": "KSAN",
+      "name": "San Diego",
+      "state": "CA",
+      "lat": 32.7336,
+      "lon": -117.1897,
+      "tz": "America/Los_Angeles",
+      "wfo": "SGX",
+      "cli": "CLISAN",
+      "region": "west",
+      "texas": false,
+      "nws_alert_area": [
+        "CA"
+      ]
+    },
+    {
+      "icao": "KSFO",
+      "name": "San Francisco",
+      "state": "CA",
+      "lat": 37.619,
+      "lon": -122.3749,
+      "tz": "America/Los_Angeles",
+      "wfo": "MTR",
+      "cli": "CLISFO",
+      "region": "west",
+      "texas": false,
+      "nws_alert_area": [
+        "CA"
+      ]
+    },
+    {
+      "icao": "KSEA",
+      "name": "Seattle",
+      "state": "WA",
+      "lat": 47.4502,
+      "lon": -122.3088,
+      "tz": "America/Los_Angeles",
+      "wfo": "SEW",
+      "cli": "CLISEA",
+      "region": "west",
+      "texas": false,
+      "nws_alert_area": [
+        "WA"
+      ]
+    },
+    {
+      "icao": "KTTN",
+      "name": "Trenton",
+      "state": "NJ",
+      "lat": 40.2767,
+      "lon": -74.8135,
+      "tz": "America/New_York",
+      "wfo": "PHI",
+      "cli": "CLITTN",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "NJ"
+      ]
+    },
+    {
+      "icao": "KDCA",
+      "name": "Washington National",
+      "state": "VA",
+      "lat": 38.8521,
+      "lon": -77.0377,
+      "tz": "America/New_York",
+      "wfo": "LWX",
+      "cli": "CLIDCA",
+      "region": "east",
+      "texas": false,
+      "nws_alert_area": [
+        "VA",
+        "DC"
+      ]
+    }
+  ]
+}

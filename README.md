@@ -31,6 +31,14 @@ Each card carries a **KALSHI SETTLEMENT · CLIxxx** badge, with the full settlem
 
 Station metadata lives in `src/stations.js`. The WFO and `CLI` + 3-letter product IDs follow standard NWS naming, but **confirm each contract's settlement source in its rules on Kalshi** before trading.
 
+## Also in this repo
+
+| Path | What |
+|---|---|
+| [`data/`](data/README.md) | `stations.json` (single source for the 24 stations) and `fetchers.js`: dependency-free METAR / NWS / USGS wrappers for Node and browsers |
+| [`agent/`](agent/README.md) | `kalshi-bins.mjs`: CLI that prices daily-high bins for KSAT/KAUS/KDFW/KHOU (or any station) and computes spreads against your prices. Run `npm run agent:fixtures` to try it offline |
+| [`docs/local-first-stack.md`](docs/local-first-stack.md) | Notes on Ollama + vLLM (`vllm-metal`) + LangGraph for an air-gapped weather/Kalshi pipeline on an M4 Mac |
+
 ## What each station shows
 
 | Field | Meaning |

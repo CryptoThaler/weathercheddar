@@ -1,0 +1,5 @@
+{
+  "_comment": "Example only: made-up YES prices in cents keyed by bin label. Replace with real Kalshi quotes; labels must match the agent's bins (run once without --prices to see them).",
+  "KAUS": { "78-79": 22, "80-81": 38, "82-83": 18 },
+  "KDFW": { "76-77": 30, "78-79": 35 }
+}
