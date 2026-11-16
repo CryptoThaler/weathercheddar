@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:cf": "vite build --base=/weathercheddar/ --outDir dist-cf --emptyOutDir && node -e \"require('fs').copyFileSync('cloudflare/_headers','dist-cf/_headers')\"",
     "dev:cf": "wrangler dev",
     "deploy:cf": "wrangler deploy",
     "agent": "node agent/kalshi-bins.mjs",

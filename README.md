@@ -94,59 +94,68 @@ Everything is bundled, including fonts (via @fontsource) and map geometry (world
 - **GitHub Pages:** `.github/workflows/pages.yml` builds and deploys on every push to `main`. In repo **Settings → Pages**, set **Source: GitHub Actions**.
 - **Vercel:** import the repo. It detects Vite automatically (build `npm run build`, output `dist`).
 - **Any static host:** upload `dist/`.
-- **Cloudflare at `www.cryptothaler.com/weathercheddar`:** see the next section.
+- **Cloudflare at `www.cryptothaler.com/weathercheddar`:** serves the original app under the new address. See the next section.
 
 ## Cloudflare: www.cryptothaler.com/weathercheddar
 
-A Cloudflare Pages custom domain attaches to a whole hostname, so a Pages project can't sit at one path of an existing site. This repo instead uses Cloudflare's documented way to serve a subdirectory: a **Worker with static assets** (`assets.base_path`) plus a **zone route**. Only `/weathercheddar*` on www.cryptothaler.com goes to this Worker. Every other path keeps its current origin, including **`/weather-cheddar/…`**, which stays with the existing `weather-cheddar-path-proxy` Worker (the original app: guide, temperature agent, K_Guage, data endpoints). Don't add a `/weather-cheddar*` route to this repo. Refs: [Serving a subdirectory](https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/), [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/).
+`www.cryptothaler.com/weathercheddar/` serves the **original Weather Cheddar app**, the one already live at `/weather-cheddar/`, under the new hyphen-free address. It's the same page at a new URL. The 3D dashboard in this repo stays on GitHub Pages.
 
-| File | Purpose |
+The original app runs in the existing Worker **`weather-cheddar-path-proxy`**, which only answers `/weather-cheddar/…` and writes that prefix into its `<base href>`, links and JSON. So this repo deploys a small alias Worker named **`weathercheddar`**:
+
+1. A request to `/weathercheddar/…` is forwarded through a **service binding** (`LEGACY`) to `weather-cheddar-path-proxy` as `/weather-cheddar/…`. A service binding is a direct Worker-to-Worker call, so the old Worker's route doesn't matter here.
+2. In text responses (HTML, JS, JSON, CSS, SVG) and in `Location` / `Set-Cookie` headers, `/weather-cheddar` is rewritten to `/weathercheddar` as a whole path segment only, so file names like `weather-cheddar-header.png` stay intact. Visitors stay on the new address.
+3. The old Worker, its code and its `/weather-cheddar` route are untouched. The old URL keeps working.
+
+| File | Must stay as-is |
 |---|---|
-| `wrangler.jsonc` | Worker `weathercheddar`. Assets come from `dist-cf/` with `base_path: "/weathercheddar"`. Route: `www.cryptothaler.com/weathercheddar*`. `build.command` runs `npm run build:cf` before every deploy. |
-| `cloudflare/worker.js` | Runs only when no asset matches. Adds the trailing slash to `/weathercheddar` and returns 404 for anything else. |
-| `cloudflare/_headers` | Immutable caching for hashed `/weathercheddar/assets/*`, revalidation for the HTML, basic security headers. |
-| `npm run build:cf` | Builds with absolute base `/weathercheddar/` into `dist-cf/`. The GitHub Pages build (`npm run build` → `dist/`, base `./`) is unchanged. |
+| `wrangler.jsonc` | `name: "weathercheddar"`, `main: "cloudflare/worker.js"`, routes `www.cryptothaler.com/weathercheddar*` + `cryptothaler.com/weathercheddar*` (zone `cryptothaler.com`), `services: [{ binding: "LEGACY", service: "weather-cheddar-path-proxy" }]`. **Don't add a `/weather-cheddar*` route.** |
+| `cloudflare/worker.js` | the alias and rewrite logic |
 
-Behaviour, checked with `wrangler dev` (Wrangler 4.157.0, pinned in devDependencies):
+Tested locally with `wrangler dev`, running this Worker next to the original Worker's deployed code (read from the account) and mock static files:
 
 | Request | Result |
 |---|---|
-| `/weathercheddar/` | 200, dashboard |
-| `/weathercheddar` | 307 → `/weathercheddar/` (query string kept) |
-| `/weather-cheddar/*` | not routed here: the existing `weather-cheddar-path-proxy` Worker serves it |
-| `/weathercheddar/assets/*` | 200, `Cache-Control: public, max-age=31536000, immutable` |
-| `/weathercheddar/<missing>` | 404 |
+| `/weathercheddar` | 301 → `/weathercheddar/` |
+| `/weathercheddar/`, `/guide/`, `/temperature-prediction-agent/`, `/K_Guage` | 200, original pages, `<base href="/weathercheddar/">` |
+| `/weathercheddar/static/…` (css, js, png, json) | 200. Absolute `/weather-cheddar/…` URLs inside are rewritten |
+| Browser session (dashboard → guide link) | every request stayed under `/weathercheddar/`; none went to `/weather-cheddar/` |
 
-### Prerequisites
+### Deploy
 
-1. `cryptothaler.com` uses Cloudflare nameservers.
-2. `www` has a **proxied (orange-cloud)** DNS record. Routes only run on proxied hostnames.
-3. If www.cryptothaler.com is itself a Cloudflare Pages/Workers project on the same zone, the route still takes priority for `/weathercheddar*`.
-
-### Option A: connect the GitHub repo (Workers Builds, recommended)
-
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Import a repository** → GitHub → `CryptoThaler/weathercheddar`.
-2. **Project/Worker name:** `weathercheddar`. It must match `name` in `wrangler.jsonc`, or the build fails.
-3. **Build command:** leave empty, since `wrangler deploy` runs `npm run build:cf` itself. **Deploy command:** `npx wrangler deploy` (the default). **Root directory:** `/`. **Production branch:** `main`.
-4. Save and deploy. Every push to `main` then deploys automatically. Other branches get preview builds (`npx wrangler preview`).
-5. Wrangler creates the routes from `wrangler.jsonc` on deploy. Confirm them under **Worker → Settings → Domains & Routes**.
-
-### Option B: deploy from your machine (uploads `dist-cf/`)
-
-```bash
-npm ci
-npx wrangler login
-npm run deploy:cf        # = wrangler deploy → runs build:cf, uploads dist-cf/, sets routes
-```
-
-To test locally first: `npm run dev:cf`, then open http://localhost:8787/weathercheddar/.
+1. **DNS:** in **cryptothaler.com → DNS → Records**, `www` (and the apex `cryptothaler.com`, if you want that alias too) must be **Proxied** (orange cloud).
+2. **Option A, dashboard:** **Workers & Pages → Create → Import a repository → GitHub → `CryptoThaler/weathercheddar`**. Name it `weathercheddar`, leave the build command empty, set the deploy command to `npx wrangler deploy`, root directory `/`, production branch `main`. Then click **Deploy**.
+   **Option B, local:** run `npm ci && npx wrangler login && npm run deploy:cf`.
+3. In **Worker `weathercheddar` → Settings → Bindings**, confirm the service binding `LEGACY → weather-cheddar-path-proxy`. Under **Domains & Routes**, confirm the two `…/weathercheddar*` routes.
 
 ### Verify
 
-- https://www.cryptothaler.com/weathercheddar/ shows the dashboard. The footer reads `◆ FIXTURE DATA · simulated feed`.
-- https://www.cryptothaler.com/weather-cheddar/ still shows the original app (existing Worker), unchanged.
-- The rest of www.cryptothaler.com is unaffected.
-- Preview URL: `https://weathercheddar.<your-subdomain>.workers.dev/weathercheddar/`.
+```bash
+curl -sI https://www.cryptothaler.com/weathercheddar | grep -iE '^(HTTP|location)'
+curl -s https://www.cryptothaler.com/weathercheddar/ | grep -o '<base href="[^"]*"'
+curl -s -o /dev/null -w '%{http_code}\n' https://www.cryptothaler.com/weather-cheddar/
+```
+
+Expected:
+- **First command:** `301`, with `location: …/weathercheddar/`.
+- **Second command:** `<base href="/weathercheddar/"`.
+- **Third command:** the old URL still returns `200`.
+
+Then open https://www.cryptothaler.com/weathercheddar/ in a browser and click **Guide**. The address bar should stay on `/weathercheddar/…`.
+
+### Optional: retire the hyphenated URL
+
+Once the new address works, you can send old links to it with a **Single Redirect** ([docs](https://developers.cloudflare.com/rules/url-forwarding/single-redirects/settings/)). In the dashboard, go to **cryptothaler.com → Rules → Redirect Rules → Create rule** and set:
+
+- **Match:** Wildcard pattern. **Request URL:** `http*://*cryptothaler.com/weather-cheddar*`
+- **Target URL:** `https://www.cryptothaler.com/weathercheddar${3}`
+- **Status code:** 301
+- **Preserve query string:** on
+
+Keep the `weather-cheddar-path-proxy` Worker deployed, because the alias still calls it through the service binding, which redirect rules don't apply to. Test with the Rules simulator, or with `curl -I`, that `/weather-cheddar/guide/` redirects to `/weathercheddar/guide/` and that `/weathercheddar/` still returns `200`.
+
+### Rollback
+
+Delete the `weathercheddar` routes (or the Worker). `/weather-cheddar/` is unaffected either way.
 
 GitHub Pages deployment (`.github/workflows/pages.yml`) keeps running on every push to `main`, independently of Cloudflare.
 

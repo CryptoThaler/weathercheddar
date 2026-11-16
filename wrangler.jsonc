@@ -1,31 +1,26 @@
-// Cloudflare Workers Static Assets config for serving the dashboard at
-// https://www.cryptothaler.com/weathercheddar (sub-path of an existing site).
-// Docs: https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/
-// Requires Wrangler >= 4.148.0 (assets.base_path). GitHub Pages is unaffected (.github/workflows/pages.yml).
+// Cloudflare Worker "weathercheddar": serves the ORIGINAL Weather Cheddar app
+// (Worker "weather-cheddar-path-proxy", public path /weather-cheddar/) at the new
+// hyphen-free address https://www.cryptothaler.com/weathercheddar/.
+//
+// How: requests to /weathercheddar/* are forwarded over a service binding to the
+// original Worker as /weather-cheddar/*, and "/weather-cheddar" in returned HTML, JS,
+// JSON, CSS and Location headers is rewritten to "/weathercheddar" so visitors stay on
+// the new address. The original Worker, its code and its /weather-cheddar route are untouched.
+// Docs: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "weathercheddar",
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-11-05",
-  // `wrangler deploy` runs this first, producing dist-cf/
-  "build": { "command": "npm run build:cf" },
-  // Keep the *.workers.dev URL for previews (served under /weathercheddar/ there too).
+  // Keep the *.workers.dev URL so the alias can be checked before routes go live.
   "workers_dev": true,
-  // Zone route: only /weathercheddar* on www.cryptothaler.com hits this Worker; the rest of
-  // the site keeps its current origin. Requires cryptothaler.com on Cloudflare DNS with a
-  // proxied (orange-cloud) record for www.
-  // Do NOT add /weather-cheddar*: that path belongs to the existing Worker
-  // "weather-cheddar-path-proxy" (original app: guide, agent, K_Guage, data endpoints).
+  // Requires cryptothaler.com on Cloudflare DNS with proxied (orange-cloud) www / apex records.
+  // Do NOT add /weather-cheddar* here: that path belongs to "weather-cheddar-path-proxy".
   "routes": [
-    { "pattern": "www.cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" }
+    { "pattern": "www.cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" },
+    { "pattern": "cryptothaler.com/weathercheddar*", "zone_name": "cryptothaler.com" }
   ],
-  "assets": {
-    "directory": "./dist-cf",
-    "binding": "ASSETS",
-    // dist-cf/index.html is served at /weathercheddar/
-    "base_path": "/weathercheddar",
-    "html_handling": "auto-trailing-slash",
-    "not_found_handling": "none"
-  },
+  // Must match the existing Worker's name exactly (same Cloudflare account).
+  "services": [{ "binding": "LEGACY", "service": "weather-cheddar-path-proxy" }],
   "observability": { "enabled": true }
 }
